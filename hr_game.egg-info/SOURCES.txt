@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+hr_game/__init__.py
+hr_game/cli.py
+hr_game.egg-info/PKG-INFO
+hr_game.egg-info/SOURCES.txt
+hr_game.egg-info/dependency_links.txt
+hr_game.egg-info/requires.txt
+hr_game.egg-info/top_level.txt
+hr_game/data/__init__.py
+hr_game/data/employee.py
+hr_game/llm/__init__.py
+hr_game/llm/scoring.py
+hr_game/llm/utils.py
