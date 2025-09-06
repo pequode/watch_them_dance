@@ -67,4 +67,4 @@ class GoodDayAtWork(EmployeeEvent):
     
     @staticmethod
     def description(result:EmployeeDelta)->str:
-        return "Ugh today sucked."
+        return "Ugh today rocked!."
