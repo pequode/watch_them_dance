@@ -1,18 +1,24 @@
 from pydantic import BaseModel, Field
 def bound(inp,top,bottom):
   return max(bottom,min(top,inp))
+
 class Trait(BaseModel):
   """Traits modify deltas. The name is the field that its referring to. The effect is how it gets modified"""
   name:str
   effect: float 
 
-class EmployeeDelta(BaseModel):
+class Delta(BaseModel):
+  """This is a change in some attribute."""
+
+class EmployeeDelta(Delta):
   stress: int = Field(...,help="The change in stress of the employee.")
   greed: int = Field(...,help="How much this employee's motivation for money has changed (on a scale from -100-100).")
   salary: int = Field(...,help="How much this employee's salary has changed")
   anger: int = Field(...,help="How much angrier the employee is on a scale (from -100-100).")
   happiness:int = Field(...,help="How the happiness of this employee has changed on a scale (from -100-100).")
   health:int = Field(...,help="How the health of this employee has changed on a scale (from -100-100).")
+  horniness:int = Field(...,help="The horniness of this employee on a scale from 0-100")
+
 class Employee(BaseModel):
   name:str
   age: int = Field(...,help="The age of the employee")
@@ -33,12 +39,19 @@ class Employee(BaseModel):
     self.anger = bound(other.anger + self.anger,100,0)
     self.health = bound(other.health + self.health,100,0)
     self.happiness = bound(other.happiness + self.happiness,100,0)
-
-
-
-
+    self.horniness = bound(other.horniness + self.horniness,100,0)
+  @property
+  def employee_id(self)->str:
+    return self.name+ str(hash(self.model_dump()))
+class EmployeeRelationshipDelta(BaseModel):
+  pass
 class EmployeeRelationship(BaseModel):
   attraction: float =Field(1.0,help="The attraction multiplier between these two employees.")
   resentment: float =Field(1.0,help="The multiplier for how much these two make each other angry.")
   synergy: float =Field(1.0,help="The multiplier for how much these two increase each other productivity.")
   friendship: float =Field(1.0,help="The multiplier for how much these two increase each others happiness")
+
+class EmployeeNetwork(BaseModel):
+  Employees:dict[str,Employee]
+  Relationships:list[tuple[str,str,EmployeeRelationship]]
+
