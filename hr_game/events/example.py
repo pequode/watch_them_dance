@@ -12,7 +12,7 @@ def null_delta_factory()->EmployeeDelta:
                 anger=0)
 class HasABaby(EmployeeEvent):
     @staticmethod
-    def pdf(self,prior:Employee,random_var:float)->EmployeeDelta:
+    def pdf(prior:Employee,random_var:float)->EmployeeDelta:
         if prior.horniness>50 and 40>prior.age>10 and random_var>0.5:
             return EmployeeDelta(
                 stress=10,
@@ -31,7 +31,7 @@ class HasABaby(EmployeeEvent):
         return "They had a kid! Its looks just like them."
 class BadDayAtWork(EmployeeEvent):
     @staticmethod
-    def pdf(self,prior:Employee,random_var:float)->EmployeeDelta:
+    def pdf(prior:Employee,random_var:float)->EmployeeDelta:
         if random_var>0.8:
             return EmployeeDelta(
                 stress=10,
@@ -51,7 +51,7 @@ class BadDayAtWork(EmployeeEvent):
     
 class GoodDayAtWork(EmployeeEvent):
     @staticmethod
-    def pdf(self,prior:Employee,random_var:float)->EmployeeDelta:
+    def pdf(prior:Employee,random_var:float)->EmployeeDelta:
         if random_var>0.8:
             return EmployeeDelta(
                 stress=-10,
@@ -68,3 +68,4 @@ class GoodDayAtWork(EmployeeEvent):
     @staticmethod
     def description(result:EmployeeDelta)->str:
         return "Ugh today rocked!."
+BUS = [HasABaby(),GoodDayAtWork(),BadDayAtWork()]
