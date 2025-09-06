@@ -10,7 +10,7 @@ import random
 from hr_game.creation.employee import randomize_employee
 from hr_game.data.employee import Employee
 from hr_game.events.base import EmployeeEvent
-from hr_game.events.example import BUS, null_delta_factory
+from hr_game.events.example import EMPLOYEE_EVENT_BUS, null_delta_factory
 
 
 def simulate_employee(employee:Employee,cycles:int,verbose:True,events:list[EmployeeEvent])->Employee:
@@ -28,4 +28,4 @@ def simulate_employee(employee:Employee,cycles:int,verbose:True,events:list[Empl
             if verbose:
                 print("--",i.description(delta))
     
-simulate_employee(randomize_employee(),100,events=BUS,verbose=True)
+simulate_employee(randomize_employee(),100,events=EMPLOYEE_EVENT_BUS,verbose=True)

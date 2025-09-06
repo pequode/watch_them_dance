@@ -35,7 +35,7 @@ class Employee(BaseModel):
   def update(self,other:EmployeeDelta):
     self.stress = bound(other.stress+self.stress,100,0)
     self.greed = bound(other.greed+self.greed,100,0)
-    self.salary = bound(other.greed+self.greed,100,0)
+    self.salary = bound(other.salary+self.salary,100_000_000,0)
     self.anger = bound(other.anger + self.anger,100,0)
     self.health = bound(other.health + self.health,100,0)
     self.happiness = bound(other.happiness + self.happiness,100,0)
