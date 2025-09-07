@@ -7,6 +7,11 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: langchain>=0.3.27
 Requires-Dist: langchain-openai>=0.3.32
+Requires-Dist: matplotlib>=3.10.6
+Requires-Dist: networkx>=3.5
+Requires-Dist: numpy>=2.3.2
+Requires-Dist: pandas>=2.3.2
 Requires-Dist: pydantic>=2.11.7
 Requires-Dist: python-dotenv>=1.1.1
+Requires-Dist: python-louvain>=0.16
 Dynamic: license-file
