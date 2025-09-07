@@ -12,12 +12,13 @@ def randomize_relationship(seed:Optional[int]=None)->EmployeeRelationship:
                                 )
     
 
-def create_fully_connected_network(seed:Optional[int],employees:list[Employee])->EmployeeNetwork:
-    nodes = {i.employee_id:i for i in employees}
+def create_fully_connected_network(employees:list[Employee],seed:Optional[int]=None)->EmployeeNetwork:
+    nodes = {}
     edges = []
     for i in employees:
+        nodes[i.employee_id] == i
         for j in employees:
-            if i.employee_id==j.employee_id:
-                continue
-            edges.append()
-    pass 
+            if j.employee_id in nodes: # filters out both self and already initialized edges. 
+                continue 
+            edges.append((i.employee_id,j.employee_id,randomize_relationship(seed)))
+    return EmployeeNetwork(employees=nodes,relationships=edges)

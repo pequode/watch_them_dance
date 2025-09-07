@@ -64,6 +64,6 @@ class EmployeeRelationship(BaseModel):
     self.friendship *=sigmoid(other.friendship, top=2,midpoint=1)
   
 class EmployeeNetwork(BaseModel):
-  Employees:dict[str,Employee]
-  Relationships:list[tuple[str,str,EmployeeRelationship]]
+  employees:dict[str,Employee]
+  relationships:list[tuple[str,str,EmployeeRelationship]]
 
