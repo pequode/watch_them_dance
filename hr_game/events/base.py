@@ -49,7 +49,7 @@ class EmployeeEffectingEvent(Event):
 class EmployeeRelationshipEvent(Event):
     @staticmethod
     @abstractmethod
-    def pdf(prior: tuple[Employee,Employee,EmployeeRelationship], random_var: float) -> EmployeeRelationshipDelta:
+    def pdf(prior: tuple[EmployeeRelationship,Employee,Employee], random_var: float) -> EmployeeRelationshipDelta:
         """Employee-specific probability density function"""
         pass
 
@@ -58,13 +58,3 @@ class EmployeeRelationshipEvent(Event):
     def description(result: EmployeeRelationshipDelta) -> str:
         """A human readable description of the employee event"""
         pass
-# class CompanyEvent(Event):
-#   @abstractmethod  
-#   @staticmethod
-#   def pdf(self,prior:Company,random_var:float)->CompanyDelta:
-#     pass
-  
-#   @abstractmethod  
-#   @staticmethod
-#   def description(result:Delta)->str:
-#     pass 

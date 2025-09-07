@@ -1,4 +1,6 @@
 from pydantic import BaseModel, Field
+
+from hr_game.events.utils import sigmoid
 def bound(inp,top,bottom):
   return max(bottom,min(top,inp))
 
@@ -18,7 +20,7 @@ class EmployeeDelta(Delta):
   happiness:int = Field(...,help="How the happiness of this employee has changed on a scale (from -100-100).")
   health:int = Field(...,help="How the health of this employee has changed on a scale (from -100-100).")
   horniness:int = Field(...,help="The horniness of this employee on a scale from 0-100")
-
+  productivity:int = Field(...,help="The productivity of this employee on a scale from 0-100")
 class Employee(BaseModel):
   name:str
   age: int = Field(...,help="The age of the employee")
@@ -40,17 +42,27 @@ class Employee(BaseModel):
     self.health = bound(other.health + self.health,100,0)
     self.happiness = bound(other.happiness + self.happiness,100,0)
     self.horniness = bound(other.horniness + self.horniness,100,0)
+    self.productivity = bound(other.productivity + self.productivity,100,0)
   @property
   def employee_id(self)->str:
     return self.name+ str(hash(self.model_dump()))
 class EmployeeRelationshipDelta(BaseModel):
-  pass
+  attraction: float =Field(1.0,help="The change in the attraction multiplier between these two employees.")
+  resentment: float =Field(1.0,help="The change in the  multiplier for how much these two make each other angry.")
+  synergy: float =Field(1.0,help="The change in the  multiplier for how much these two increase each other productivity.")
+  friendship: float =Field(1.0,help="The change in the  multiplier for how much these two increase each others happiness")
+
 class EmployeeRelationship(BaseModel):
   attraction: float =Field(1.0,help="The attraction multiplier between these two employees.")
   resentment: float =Field(1.0,help="The multiplier for how much these two make each other angry.")
   synergy: float =Field(1.0,help="The multiplier for how much these two increase each other productivity.")
   friendship: float =Field(1.0,help="The multiplier for how much these two increase each others happiness")
-
+  def update(self,other:EmployeeRelationshipDelta):
+    self.attraction *=sigmoid(other.attraction, top=2,midpoint=1)
+    self.resentment *=sigmoid(other.resentment, top=2,midpoint=1)
+    self.synergy *=sigmoid(other.synergy, top=2,midpoint=1)
+    self.friendship *=sigmoid(other.friendship, top=2,midpoint=1)
+  
 class EmployeeNetwork(BaseModel):
   Employees:dict[str,Employee]
   Relationships:list[tuple[str,str,EmployeeRelationship]]

@@ -1,6 +1,6 @@
 # lets do some employee events: 
-from hr_game.data.employee import Employee, EmployeeDelta
-from hr_game.events.base import EmployeeEvent
+from hr_game.data.employee import Employee, EmployeeDelta, EmployeeRelationship, EmployeeRelationshipDelta
+from hr_game.events.base import EmployeeEffectingEvent, EmployeeEvent, EmployeeRelationshipEvent
 
 def null_delta_factory()->EmployeeDelta:
     return EmployeeDelta(stress=0,
@@ -9,7 +9,9 @@ def null_delta_factory()->EmployeeDelta:
                 greed=20,
                 salary=0,
                 horniness=-50,
-                anger=0)
+                anger=0,
+                productivity=0
+                )
 class HasABaby(EmployeeEvent):
     @staticmethod
     def pdf(prior:Employee,random_var:float)->EmployeeDelta:
@@ -21,7 +23,8 @@ class HasABaby(EmployeeEvent):
                 greed=20,
                 salary=0,
                 horniness=-50,
-                anger=0
+                anger=0,
+                productivity=-10
 
             )
         return null_delta_factory()
@@ -40,7 +43,8 @@ class BadDayAtWork(EmployeeEvent):
                 greed=0,
                 salary=0,
                 horniness=10,
-                anger=10
+                anger=10,
+                productivity=-5
 
             )
         return null_delta_factory()
@@ -60,7 +64,8 @@ class GoodDayAtWork(EmployeeEvent):
                 greed=0,
                 salary=0,
                 horniness=-10,
-                anger=-10
+                anger=-10,
+                productivity=0
 
             )
         return null_delta_factory()
@@ -82,7 +87,8 @@ class CoffeeBreak(EmployeeEvent):
                 greed=0,
                 salary=0,
                 horniness=0,
-                anger=0
+                anger=0,
+                productivity=5
             )
         return null_delta_factory()
 
@@ -105,7 +111,8 @@ class OfficeGossip(EmployeeEvent):
                 greed=0,
                 salary=0,
                 horniness=0,
-                anger=anger_increase
+                anger=anger_increase,
+                productivity=0
             )
         return null_delta_factory()
 
@@ -128,7 +135,8 @@ class Promotion(EmployeeEvent):
                 greed=-10,
                 salary=20_000,
                 horniness=0,
-                anger=0
+                anger=0,
+                productivity=10
             )
         return null_delta_factory()
 
@@ -151,7 +159,8 @@ class MissedDeadline(EmployeeEvent):
                 greed=0,
                 salary=0,
                 horniness=0,
-                anger=10
+                anger=10,
+                productivity=-10
             )
         return null_delta_factory()
 
@@ -159,4 +168,152 @@ class MissedDeadline(EmployeeEvent):
     def description(result: EmployeeDelta) -> str:
         return "They missed a deadline and feel awful."
 # create event for network. 
+
+class EnteringFlowState(EmployeeEffectingEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship,Employee], random_var: float) -> EmployeeDelta:
+        relationship,employee = prior
+        productivity_increase = (1+relationship.synergy)*10 
+        stress_decrease = -((relationship.synergy)*employee.stress/100)
+        return EmployeeDelta(stress=stress_decrease,
+                             greed=0,
+                             salary=0,
+                             anger=0,
+                             happiness=0,
+                             health=0,
+                             horniness=0,
+                             productivity=productivity_increase
+                             )
+        
+
+    @staticmethod
+    def description(result: EmployeeDelta) -> str:
+        pick = ""
+        val = result.productivity
+        if val>15:
+            pick = "super productive."
+        elif val>10:
+            pick = "somewhat productive."
+        elif val>5:
+            pick = "disappointingly productive"
+        else:
+            pick = "unproductive"
+        return f"Entered a {pick} flow state!"
+        
+    
+class PickAFight(EmployeeEffectingEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship,Employee], random_var: float) -> EmployeeDelta:
+        relationship,employee = prior
+        if relationship.resentment*employee.anger>100*random_var:
+            EmployeeDelta(
+                stress=10,
+                greed=0,
+                salary=0,
+                anger=5,
+                happiness=-10,
+                health=0,
+                horniness=0,
+                productivity= -5 
+            )
+        return null_delta_factory()
+
+    @staticmethod
+    def description(result: EmployeeDelta) -> str:
+        return "They picked a fight with a co-worker. Not good for their heart."
+     
+class HaveAnAffair(EmployeeEffectingEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship,Employee], random_var: float) -> EmployeeDelta:
+        relationship,employee = prior
+        if employee.horniness*(1+relationship.attraction)> (100*random_var):
+            return EmployeeDelta(stress=10,greed=0,salary=0,anger=10,happiness=-20,health=0,horniness=-5,productivity=-10)
+        return null_delta_factory()
+
+    @staticmethod
+    def description(result: EmployeeDelta) -> str:
+        return "They are ruining their life. They decided to have an affair but left their location on. Their partner is suspicious."
+
+class PlaySomeGolf(EmployeeEffectingEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship,Employee], random_var: float) -> EmployeeDelta:
+        relationship,employee = prior
+        if relationship.friendship> random_var:
+            return EmployeeDelta(stress=-10,greed=0,salary=10_000*random_var,anger=-10,happiness=10,health=0,horniness=-5,productivity=5)
+        return null_delta_factory() 
+
+    @staticmethod
+    def description(result: EmployeeDelta) -> str:
+        return "Played a round of golf. Woah! This is really good for their career!"
+    
+class SecretRivalry(EmployeeEffectingEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship,Employee], random_var: float) -> EmployeeDelta:
+        relationship,employee = prior
+        if relationship.resentment>random_var and relationship.friendship<random_var and employee.stress<80:
+            return EmployeeDelta(stress=10,greed=10,salary=0,anger=5,happiness=-5,health=0,horniness=-5,productivity=10)
+        return null_delta_factory()
+    @staticmethod
+    def description(result: EmployeeDelta) -> str:
+        return "They started a one sided rivalry with a co-worker. Just you wait..."
+## relationship effecting events
+class RomanticLunch(EmployeeRelationshipEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship,Employee,Employee], random_var: float) -> EmployeeRelationshipDelta:
+        relationship,employee1,employee2 = prior 
+        return EmployeeRelationshipDelta(
+            attraction=(float(relationship.attraction>0.5) + 0.5)*(employee1.horniness+employee2.horniness)/100,
+            resentment=0.75,
+            synergy=1,
+            friendship=1.25
+        )
+
+    @staticmethod
+    def description(result: EmployeeRelationshipDelta) -> str:
+        if result.attraction > 0.5: 
+            return "Things are getting complicated between these two..."
+        return "Some people can just be platonic."
+class OverheadGossip(EmployeeRelationshipEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship,Employee,Employee], random_var: float) -> EmployeeRelationshipDelta:
+        relationship,employee1,employee2 = prior 
+        return EmployeeRelationshipDelta(
+            attraction=1,
+            resentment=0.75,
+            synergy=1,
+            friendship=1,
+        )
+
+    @staticmethod
+    def description(result: EmployeeRelationshipDelta) -> str:
+        return "They overheard someone talking about them..." 
+    
+class BrainstormingSession(EmployeeRelationshipEvent):
+    pass 
+class RiskyJoke(EmployeeRelationshipEvent):
+    @staticmethod
+    def pdf(prior: tuple[EmployeeRelationship, Employee, Employee], random_var: float) -> EmployeeRelationshipDelta:
+        relationship, e1, e2 = prior
+        if relationship.friendship > relationship.resentment and random_var > 0.4:
+            return EmployeeRelationshipDelta(
+                attraction=1,
+                resentment=0.5,
+                synergy=1.5,
+                friendship=1.5
+            )
+        else:
+            return EmployeeRelationshipDelta(
+                attraction=0.75,
+                resentment=1.5,
+                synergy=0.8,
+                friendship=0.8
+            )
+    @staticmethod
+    def description(result: EmployeeRelationshipDelta) -> str:
+        if result.friendship > 1:
+            return "The risky joke landed perfectly — everyone laughed!"
+        return "The risky joke fell flat and created awkward tension."
+
 EMPLOYEE_EVENT_BUS = [HasABaby(),GoodDayAtWork(),BadDayAtWork(),CoffeeBreak(),OfficeGossip(),MissedDeadline(),Promotion(),MissedDeadline()]
+EMPLOYEE_EFFECTING_EVENT_BUS = [EnteringFlowState(),PickAFight(),HaveAnAffair(),PlaySomeGolf(),SecretRivalry()]
+EMPLOYEE_RELATIONSHIP_EVENT_BUSS = [RomanticLunch(),OverheadGossip(),BrainstormingSession(),RiskyJoke()]
