@@ -45,7 +45,7 @@ class Employee(BaseModel):
     self.productivity = bound(other.productivity + self.productivity,100,0)
   @property
   def employee_id(self)->str:
-    return self.name+ str(hash(self.model_dump()))
+    return self.name+ str(hash(self.model_dump_json()))
 class EmployeeRelationshipDelta(BaseModel):
   attraction: float =Field(1.0,help="The change in the attraction multiplier between these two employees.")
   resentment: float =Field(1.0,help="The change in the  multiplier for how much these two make each other angry.")

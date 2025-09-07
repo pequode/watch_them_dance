@@ -16,7 +16,7 @@ def create_fully_connected_network(employees:list[Employee],seed:Optional[int]=N
     nodes = {}
     edges = []
     for i in employees:
-        nodes[i.employee_id] == i
+        nodes[i.employee_id] = i
         for j in employees:
             if j.employee_id in nodes: # filters out both self and already initialized edges. 
                 continue 
