@@ -2,7 +2,10 @@ import random
 from typing import Dict, Any
 from hr_game.data.company import GameState, Company, CrisisEvent
 from hr_game.data.employee import Employee, EmployeeDelta, EmployeeNetwork
-from hr_game.creation.employee import generate_employee_for_company
+from hr_game.creation.employee import (
+    generate_employee_for_company,
+    generate_employees_batch_llm,
+)
 from hr_game.creation.network import create_fully_connected_network
 from hr_game.events.example import (
     EMPLOYEE_EVENT_BUS,
@@ -43,16 +46,35 @@ class GameEngine:
         employees = []
         print(f"\n🏗️  Creating {employee_count} employees for {company.name}...")
 
-        for i in range(employee_count):
-            dept = random.choice(departments)
-            level = random.choice(["L1", "L2", "L3", "L4", "L5"])
-            role = "Engineer" if dept == "Engineering" else f"{dept} Specialist"
+        batch_size = 8  # Process employees in batches to avoid too long prompts
 
-            print(f"  Creating employee {i+1}/{employee_count}...")
-            employee = generate_employee_for_company(
-                company, role, dept, level, self.llm, seed=i
+        for batch_start in range(0, employee_count, batch_size):
+            batch_end = min(batch_start + batch_size, employee_count)
+            batch_employees = []
+
+            print(
+                f"  Creating employees {batch_start+1}-{batch_end}/{employee_count}..."
             )
-            employees.append(employee)
+
+            # Create base employees without LLM calls
+            for i in range(batch_start, batch_end):
+                dept = random.choice(departments)
+                level = random.choice(["L1", "L2", "L3", "L4", "L5"])
+                role = "Engineer" if dept == "Engineering" else f"{dept} Specialist"
+
+                employee = generate_employee_for_company(
+                    company, role, dept, level, self.llm, seed=i
+                )
+                batch_employees.append(employee)
+
+            # Generate backstories/values/goals for the batch with single LLM call
+            if batch_employees:
+                print(f"  Generating personalities for batch...")
+                batch_employees = generate_employees_batch_llm(
+                    company, batch_employees, self.llm
+                )
+
+            employees.extend(batch_employees)
 
         if company.org_structure == "hierarchical":
             managers = [e for e in employees if e.level in ["L4", "L5"]]
@@ -129,18 +151,18 @@ class GameEngine:
         """Have a conversation with an employee and return their response"""
         persona = f"""You are {employee.name}, a {employee.level} {employee.role} in {employee.department}.
 
-Background: {employee.backstory}
-Values: {', '.join(employee.values)}
-Goals: {', '.join(employee.goals)}
-Recent events: {', '.join(employee.mem_short[-3:]) if employee.mem_short else 'None'}
+        Background: {employee.backstory}
+        Values: {', '.join(employee.values)}
+        Goals: {', '.join(employee.goals)}
+        Recent events: {', '.join(employee.mem_short[-3:]) if employee.mem_short else 'None'}
 
-Current state:
-- Happiness: {employee.happiness}/100
-- Stress: {employee.stress}/100  
-- Anger: {employee.anger}/100
-- Health: {employee.health}/100
+        Current state:
+        - Happiness: {employee.happiness}/100
+        - Stress: {employee.stress}/100  
+        - Anger: {employee.anger}/100
+        - Health: {employee.health}/100
 
-You're meeting with your HR/CEO. Respond naturally based on your personality and current state. Keep responses to 2-3 sentences."""
+        You're meeting with your HR/CEO. Respond naturally based on your personality and current state. Keep responses to 2-3 sentences."""
 
         try:
             response = self.llm.invoke(

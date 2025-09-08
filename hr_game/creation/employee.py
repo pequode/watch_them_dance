@@ -99,40 +99,6 @@ def generate_employee_for_company(
     salary = base_salary.get(department, base_salary["Engineering"]).get(level, 80000)
     salary += random.randint(-10000, 15000)
 
-    try:
-        backstory_prompt = f"""Create a brief 2-3 sentence backstory for an employee at {company.name} ({company.industry} company with {company.culture} culture). 
-
-Employee details:
-- Name: {base_employee.name}
-- Age: {base_employee.age}
-- Role: {roles[level]} {role} in {department}
-- Personality hints: stress={base_employee.stress}, happiness={base_employee.happiness}, greed={base_employee.greed}
-
-Write a concise, realistic backstory that explains their background and current situation."""
-
-        backstory = llm.invoke(backstory_prompt).content.strip()
-
-        values_prompt = f"""Based on this employee: {backstory}
-List 2-3 core values that drive their decisions (like 'work-life balance', 'career growth', 'financial security', 'creativity', 'teamwork'). 
-Respond with just a comma-separated list."""
-
-        values_text = llm.invoke(values_prompt).content.strip()
-        values = [v.strip() for v in values_text.split(",")][:3]
-
-        goals_prompt = f"""Based on this employee: {backstory}
-List 2-3 current goals they might have (like 'get promoted', 'learn new skills', 'buy a house', 'find work-life balance').
-Respond with just a comma-separated list."""
-
-        goals_text = llm.invoke(goals_prompt).content.strip()
-        goals = [g.strip() for g in goals_text.split(",")][:3]
-
-    except Exception:
-        backstory = (
-            f"A {level} {role} in {department} who joined {company.name} recently."
-        )
-        values = ["teamwork", "growth"]
-        goals = ["do good work", "advance career"]
-
     skills = {}
     if department == "Engineering":
         skills = {
@@ -163,13 +129,115 @@ Respond with just a comma-separated list."""
     base_employee.department = department
     base_employee.level = level
     base_employee.salary = salary
-    base_employee.backstory = backstory
-    base_employee.values = values
-    base_employee.goals = goals
     base_employee.skills = skills
     base_employee.tenure_months = random.randint(1, 36)
 
     return base_employee
+
+
+def generate_employees_batch_llm(
+    company: Company, employee_list: list[Employee], llm
+) -> list[Employee]:
+    """Generate backstories, values, and goals for a batch of employees with a single LLM call"""
+
+    if not employee_list:
+        return employee_list
+
+    try:
+        batch_prompt = f"""Create employee profiles for {company.name} ({company.industry} company with {company.culture} culture).
+
+For each employee below, provide:
+1. A brief 2-3 sentence backstory
+2. 2-3 core values (comma-separated)  
+3. 2-3 current goals (comma-separated)
+
+Format your response exactly like this:
+
+EMPLOYEE 1:
+Backstory: [backstory here]
+Values: value1, value2, value3
+Goals: goal1, goal2, goal3
+
+EMPLOYEE 2:
+Backstory: [backstory here]
+Values: value1, value2, value3
+Goals: goal1, goal2, goal3
+
+Here are the employees:
+
+"""
+
+        for i, emp in enumerate(employee_list, 1):
+            roles = {
+                "L1": "Junior",
+                "L2": "Mid-level",
+                "L3": "Senior",
+                "L4": "Staff",
+                "L5": "Principal",
+            }
+            role_desc = roles.get(emp.level, "Mid-level")
+
+            batch_prompt += f"""EMPLOYEE {i}:
+- Name: {emp.name}
+- Age: {emp.age}
+- Role: {role_desc} {emp.role} in {emp.department}
+- Personality: stress={emp.stress}, happiness={emp.happiness}, greed={emp.greed}
+
+"""
+
+        response = llm.invoke(batch_prompt).content.strip()
+
+        # Parse the response
+        employee_blocks = []
+        current_block = []
+
+        for line in response.split("\n"):
+            line = line.strip()
+            if line.startswith("EMPLOYEE ") and current_block:
+                employee_blocks.append("\n".join(current_block))
+                current_block = []
+            if line:
+                current_block.append(line)
+
+        if current_block:
+            employee_blocks.append("\n".join(current_block))
+
+        # Apply parsed data to employees
+        for i, (emp, block) in enumerate(zip(employee_list, employee_blocks)):
+            backstory = ""
+            values = ["teamwork", "growth"]
+            goals = ["do good work", "advance career"]
+
+            try:
+                lines = block.split("\n")
+                for line in lines:
+                    if line.startswith("Backstory:"):
+                        backstory = line[10:].strip()
+                    elif line.startswith("Values:"):
+                        values_text = line[7:].strip()
+                        values = [v.strip() for v in values_text.split(",")][:3]
+                    elif line.startswith("Goals:"):
+                        goals_text = line[6:].strip()
+                        goals = [g.strip() for g in goals_text.split(",")][:3]
+
+                if not backstory:
+                    backstory = f"A {emp.level} {emp.role} in {emp.department} who joined {company.name} recently."
+
+            except Exception:
+                backstory = f"A {emp.level} {emp.role} in {emp.department} who joined {company.name} recently."
+
+            emp.backstory = backstory
+            emp.values = values
+            emp.goals = goals
+
+    except Exception:
+        # Fallback to simple backstories if LLM call fails
+        for emp in employee_list:
+            emp.backstory = f"A {emp.level} {emp.role} in {emp.department} who joined {company.name} recently."
+            emp.values = ["teamwork", "growth"]
+            emp.goals = ["do good work", "advance career"]
+
+    return employee_list
 
 
 ### random utility
